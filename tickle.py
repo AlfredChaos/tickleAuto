@@ -1,6 +1,7 @@
 import os
 import time
 import pickle
+import platform
 from time import sleep
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -17,11 +18,20 @@ class Concert:
     def __init__(self):
         self.status = 0         # 状态,表示如今进行到何种程度
         self.login_method = 1   # {0:模拟登录,1:Cookie登录}自行选择登录方式
-        # self.driver = webdriver.Chrome(executable_path='chromedriver.exe')
-        self.driver = webdriver.Chrome()        # 默认Edge浏览器
+        current_path = os.getcwd()
+        try:
+            if platform.system().startswith('Windows'):
+                driver_path = current_path + '\win\chromedriver.exe'
+                self.driver = webdriver.Chrome(executable_path=driver_path)       # 默认Chrome浏览器
+            else:
+                self.driver = webdriver.Chrome()
+        except:
+            err_msg = '浏览器未找到，请安装Chrome'
+            raise err_msg
 
     def set_cookie(self):
         self.driver.get(damai_url)
+        time.sleep(2)
         print("###请点击登录###")
         while self.driver.title.find('大麦网-全球演出赛事官方购票平台') != -1:
             sleep(1)
@@ -33,6 +43,7 @@ class Concert:
         pickle.dump(self.driver.get_cookies(), open("cookies.pkl", "wb"))
         print("###Cookie保存成功###")
         self.driver.get(target_url)
+        time.sleep(2)
 
     def get_cookie(self):
         try:
@@ -61,6 +72,7 @@ class Concert:
             else:
                 self.driver.get(target_url)
                 self.get_cookie()
+                time.sleep(2)
 
     def enter_concert(self):
         """打开浏览器"""
@@ -69,9 +81,9 @@ class Concert:
         # 调用登陆
         self.login()                            # 先登录再说
         self.driver.refresh()                   # 刷新页面
+        time.sleep(2)
         self.status = 2                         # 登录成功标识
         print("###登录成功###")
-        # 后续德云社可以讲
         if self.isElementExist('/html/body/div[2]/div[2]/div/div/div[3]/div[2]'):
             self.driver.find_element_by_xpath(
                 '/html/body/div[2]/div[2]/div/div/div[3]/div[2]').click()
@@ -130,6 +142,8 @@ class Concert:
                 except:
                     print('###未跳转到订单结算界面###')
                     raise
+                #这里可能有反爬措施
+                # 这里需要等待网页加载完毕，再进行购买
                 time.sleep(20)
                 title = self.driver.title
                 if title == '选座购买':
