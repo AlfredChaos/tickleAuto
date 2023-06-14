@@ -11,13 +11,14 @@ damai_url = "https://www.damai.cn/"
 # login
 login_url = "https://passport.damai.cn/login"
 # target
-target_url = "https://detail.damai.cn/item.htm?spm=a2oeg.home.card_0.ditem_1.591b23e1zTvcwn&id=722910145901"
+# target_url = "https://detail.damai.cn/item.htm?spm=a2oeg.home.card_0.ditem_1.591b23e1zTvcwn&id=722910145901"
 
 
 class Concert:
-    def __init__(self):
+    def __init__(self, target):
         self.status = 0         # 状态,表示如今进行到何种程度
         self.login_method = 1   # {0:模拟登录,1:Cookie登录}自行选择登录方式
+        self.target = target
         current_path = os.getcwd()
         try:
             if platform.system().startswith('Windows'):
@@ -42,7 +43,7 @@ class Concert:
         print("###扫码成功###")
         pickle.dump(self.driver.get_cookies(), open("cookies.pkl", "wb"))
         print("###Cookie保存成功###")
-        self.driver.get(target_url)
+        self.driver.get(self.target)
         time.sleep(2)
 
     def get_cookie(self):
@@ -70,7 +71,7 @@ class Concert:
                 # 如果不存在cookie.pkl,就获取一下
                 self.set_cookie()
             else:
-                self.driver.get(target_url)
+                self.driver.get(self.target)
                 self.get_cookie()
                 time.sleep(2)
 
@@ -114,7 +115,7 @@ class Concert:
                     if buybutton == "提交缺货登记":
                         # 改变现有状态
                         self.status = 2
-                        self.driver.get(target_url)
+                        self.driver.get(self.target)
                         print('###抢票未开始，刷新等待开始###')
                         raise
                     elif buybutton == "立即预定":
@@ -190,12 +191,14 @@ class Concert:
         self.driver.quit()
 
 
-if __name__ == '__main__':
+def ticket_snatch(target):
     try:
-        con = Concert()             # 具体如果填写请查看类中的初始化函数
+        con = None
+        con = Concert(target)       # 具体如果填写请查看类中的初始化函数
         con.enter_concert()         # 打开浏览器
         con.choose_ticket()         # 开始抢票
 
     except Exception as e:
         print(e)
-        con.finish()
+        if con:
+            con.finish()
