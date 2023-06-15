@@ -20,12 +20,16 @@ class Concert:
         self.login_method = 1   # {0:模拟登录,1:Cookie登录}自行选择登录方式
         self.target = target
         current_path = os.getcwd()
+
+        option = webdriver.ChromeOptions()
+        option.add_experimental_option('excludeSwitches', ['enable-automation'])
+        option.add_argument('--disable-blink-features=AutomationControlled')
         try:
             if platform.system().startswith('Windows'):
                 driver_path = current_path + '\win\chromedriver.exe'
-                self.driver = webdriver.Chrome(executable_path=driver_path)       # 默认Chrome浏览器
+                self.driver = webdriver.Chrome(executable_path=driver_path, options=option)       # 默认Chrome浏览器
             else:
-                self.driver = webdriver.Chrome()
+                self.driver = webdriver.Chrome(options=option)
         except:
             err_msg = '浏览器未找到，请安装Chrome'
             raise err_msg
