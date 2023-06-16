@@ -2,6 +2,8 @@ import os
 import time
 import pickle
 import platform
+from allog.python import pylog
+from allog.python.pylog import Level
 from time import sleep
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -19,8 +21,9 @@ class Concert:
         self.status = 0         # 状态,表示如今进行到何种程度
         self.login_method = 1   # {0:模拟登录,1:Cookie登录}自行选择登录方式
         self.target = target
+        self.log = pylog.log(file=None, level=Level.Info)
         current_path = os.getcwd()
-
+        self.log.info(f'current path {current_path}')
         option = webdriver.ChromeOptions()
         option.add_experimental_option('excludeSwitches', ['enable-automation'])
         option.add_argument('--disable-blink-features=AutomationControlled')
@@ -32,21 +35,22 @@ class Concert:
                 self.driver = webdriver.Chrome(options=option)
         except:
             err_msg = '浏览器未找到，请安装Chrome'
+            self.log.error(f'init cocert error: {err_msg}')
             raise err_msg
 
     def set_cookie(self):
         self.driver.get(damai_url)
         time.sleep(2)
-        print("###请点击登录###")
+        self.log.info('###请点击登录###')
         while self.driver.title.find('大麦网-全球演出赛事官方购票平台') != -1:
             sleep(1)
-        print('###请扫码登录###')
+        self.log.info('###请扫码登录###')
 
         while self.driver.title != '大麦网-全球演出赛事官方购票平台-100%正品、先付先抢、在线选座！':
             sleep(1)
-        print("###扫码成功###")
+        self.log.info('###扫码成功###')
         pickle.dump(self.driver.get_cookies(), open("cookies.pkl", "wb"))
-        print("###Cookie保存成功###")
+        self.log.info('###Cookie保存成功###')
         self.driver.get(self.target)
         time.sleep(2)
 
@@ -60,15 +64,15 @@ class Concert:
                     'value': cookie.get('value')
                 }
                 self.driver.add_cookie(cookie_dict)
-            print('###载入Cookie###')
+            self.log.info('###载入Cookie###')
         except Exception as e:
-            print(e)
+            self.log.error(f'func get_cookie raise exception: {e}')
 
     def login(self):
         if self.login_method == 0:
             self.driver.get(login_url)
             # 载入登录界面
-            print('###开始登录###')
+            self.log.info('###开始登录###')
 
         elif self.login_method == 1:
             if not os.path.exists('cookies.pkl'):
@@ -81,14 +85,14 @@ class Concert:
 
     def enter_concert(self):
         """打开浏览器"""
-        print('###打开浏览器，进入大麦网###')
+        self.log.info('###打开浏览器，进入大麦网###')
         # self.driver.maximize_window()           # 最大化窗口
         # 调用登陆
         self.login()                            # 先登录再说
         self.driver.refresh()                   # 刷新页面
         time.sleep(2)
         self.status = 2                         # 登录成功标识
-        print("###登录成功###")
+        self.log.info('###登录成功###')
         if self.isElementExist('/html/body/div[2]/div[2]/div/div/div[3]/div[2]'):
             self.driver.find_element_by_xpath(
                 '/html/body/div[2]/div[2]/div/div/div[3]/div[2]').click()
@@ -109,18 +113,18 @@ class Concert:
         """选票操作"""
         if self.status == 2:  # 登录成功入口
             print("="*30)
-            print("###开始进行日期及票价选择###")
+            self.log.info('###开始进行日期及票价选择###')
             # 如果跳转到了订单结算界面就算这步成功了，否则继续执行此步
             if self.driver.title.find('确认订单') == -1:
                 try:
                     buybutton = self.driver.find_element(By.CLASS_NAME, 'buy-link').text
-                    print('###跳转购票页面###')
-                    print(buybutton)
+                    self.log.info('###跳转购票页面###')
+                    self.log.info(f'func choose_ticket get buybutton text: {buybutton}')
                     if buybutton == "提交缺货登记":
                         # 改变现有状态
                         self.status = 2
                         self.driver.get(self.target)
-                        print('###抢票未开始，刷新等待开始###')
+                        self.log.info('###抢票未开始，刷新等待开始###')
                         raise
                     elif buybutton == "立即预定":
                         self.driver.find_element(By.CLASS_NAME, 'buybtn').click()
@@ -145,8 +149,8 @@ class Concert:
                     else:
                         raise
                 except:
-                    print('###未跳转到订单结算界面###')
-                    raise
+                    self.log.error('###未跳转到订单结算界面###')
+                    raise "无法结算"
                 #这里可能有反爬措施
                 # 这里需要等待网页加载完毕，再进行购买
                 time.sleep(20)
@@ -156,8 +160,7 @@ class Concert:
                     self.choice_seats()
                 elif title == '确认订单':
                     while True:
-                        #
-                        print('waiting ......')
+                        self.log.info('waiting ......')
                         if self.isElementExist('//*[@id="container"]/div/div[9]/button'):
                             self.check_order()
                             break
@@ -167,7 +170,7 @@ class Concert:
         while self.driver.title == '选座购买':
             while self.isElementExist('//*[@id="app"]/div[2]/div[2]/div[1]/div[2]/img'):
                 # 座位手动选择 选中座位之后//*[@id="app"]/div[2]/div[2]/div[1]/div[2]/img 就会消失
-                print('请快速的选择您的座位！！！')
+                self.log.info('请快速的选择您的座位！！！')
             # 消失之后就会出现 //*[@id="app"]/div[2]/div[2]/div[2]/div
             while self.isElementExist('//*[@id="app"]/div[2]/div[2]/div[2]/div'):
                 # 找到之后进行点击确认选座
@@ -177,14 +180,14 @@ class Concert:
     def check_order(self):
         """下单操作"""
         if self.status in [3, 4, 5]:
-            print('###开始确认订单###')
+            self.log.info('###开始确认订单###')
             try:
                 # 默认选第一个购票人信息
                 self.driver.find_element_by_xpath(
                     '//*[@id="container"]/div/div[2]/div[2]/div[1]/div/label').click()
             except Exception as e:
-                print("###购票人信息选中失败，自行查看元素位置###")
-                print(e)
+                self.log.error('###购票人信息选中失败，自行查看元素位置###')
+                self.log.error(f'func check_order got exception: {e}')
             # 最后一步提交订单
             time.sleep(0.5)  # 太快会影响加载，导致按钮点击无效
             self.driver.find_element_by_xpath(
