@@ -1,12 +1,15 @@
 import os
 import time
 import pickle
+import random
 import platform
 from allog.python import pylog
 from allog.python.pylog import Level
 from time import sleep
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # web
 damai_url = "https://www.damai.cn/"
@@ -40,7 +43,7 @@ class Concert:
 
     def set_cookie(self):
         self.driver.get(damai_url)
-        time.sleep(2)
+        time.sleep(random.randint(1, 2))
         self.log.info('###请点击登录###')
         while self.driver.title.find('大麦网-全球演出赛事官方购票平台') != -1:
             sleep(1)
@@ -52,7 +55,7 @@ class Concert:
         pickle.dump(self.driver.get_cookies(), open("cookies.pkl", "wb"))
         self.log.info('###Cookie保存成功###')
         self.driver.get(self.target)
-        time.sleep(2)
+        time.sleep(random.randint(1, 3))
 
     def get_cookie(self):
         try:
@@ -81,7 +84,7 @@ class Concert:
             else:
                 self.driver.get(self.target)
                 self.get_cookie()
-                time.sleep(2)
+                time.sleep(random.randint(1, 3))
 
     def enter_concert(self):
         """打开浏览器"""
@@ -90,12 +93,9 @@ class Concert:
         # 调用登陆
         self.login()                            # 先登录再说
         self.driver.refresh()                   # 刷新页面
-        time.sleep(2)
+        time.sleep(random.randint(1, 3))
         self.status = 2                         # 登录成功标识
         self.log.info('###登录成功###')
-        if self.isElementExist('/html/body/div[2]/div[2]/div/div/div[3]/div[2]'):
-            self.driver.find_element_by_xpath(
-                '/html/body/div[2]/div[2]/div/div/div[3]/div[2]').click()
 
     def isElementExist(self, element):
         """判断元素是否存在"""
@@ -112,7 +112,6 @@ class Concert:
     def choose_ticket(self):
         """选票操作"""
         if self.status == 2:  # 登录成功入口
-            print("="*30)
             self.log.info('###开始进行日期及票价选择###')
             # 如果跳转到了订单结算界面就算这步成功了，否则继续执行此步
             if self.driver.title.find('确认订单') == -1:
@@ -139,9 +138,6 @@ class Concert:
                         self.driver.find_element(By.CLASS_NAME, 'buybtn').click()
                         self.status = 5
                     elif buybutton == '不，立即购买':
-                        # img_elem = self.driver.find_element(By.XPATH, '//div[@id="buy-link"]/img')
-                        # img_src = img_elem.get_attribute('src')
-                        # print(img_src)
                         buylink = self.driver.find_element(By.XPATH, '//div[@class="buy-link"]')
                         buylink.click()
                         # 跳转新页面，通过web网页完成购买
@@ -153,14 +149,23 @@ class Concert:
                     raise "无法结算"
                 #这里可能有反爬措施
                 # 这里需要等待网页加载完毕，再进行购买
-                time.sleep(20)
+                time.sleep(random.randint(1, 2))
                 title = self.driver.title
+                self.log.info(f'###get web page title = {title}')
                 if title == '选座购买':
                     # 实现选座位购买的逻辑
                     self.choice_seats()
+                elif title == '订单确认页':
+                    self.log.info('waiting......')
+                    if self.driver.find_element(By.CLASS_NAME, 'viewer'):
+                        self.log.info('###start check order')
+                        self.check_order()
+                    else:
+                        self.log.error('请添加乘客信息')
+                        raise '抢票失败'
                 elif title == '确认订单':
                     while True:
-                        self.log.info('waiting ......')
+                        self.log.info('waiting......')
                         if self.isElementExist('//*[@id="container"]/div/div[9]/button'):
                             self.check_order()
                             break
@@ -179,22 +184,25 @@ class Concert:
 
     def check_order(self):
         """下单操作"""
-        if self.status in [3, 4, 5]:
+        if self.status in [3, 4, 5, 6]:
             self.log.info('###开始确认订单###')
             try:
-                # 默认选第一个购票人信息
-                self.driver.find_element_by_xpath(
-                    '//*[@id="container"]/div/div[2]/div[2]/div[1]/div/label').click()
+                # 选择购票人信息
+                # self.driver.find_element_by_xpath(
+                #     '//*[@id="container"]/div/div[2]/div[2]/div[1]/div/label').click()
+                radio = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.XPATH,"//div[text()='曹杰']")))
+                radio.click()
             except Exception as e:
                 self.log.error('###购票人信息选中失败，自行查看元素位置###')
                 self.log.error(f'func check_order got exception: {e}')
             # 最后一步提交订单
-            time.sleep(0.5)  # 太快会影响加载，导致按钮点击无效
+            time.sleep(random.randint(1, 2))  # 太快会影响加载，导致按钮点击无效
             self.driver.find_element_by_xpath(
                 '//div[@class = "w1200"]//div[2]//div//div[9]//button[1]').click()
 
-    def finish(self):
+    def finish(self, err):
         """结束"""
+        self.log.error(f'Web closed as {err}')
         self.driver.quit()
 
 
@@ -206,6 +214,5 @@ def ticket_snatch(target):
         con.choose_ticket()         # 开始抢票
 
     except Exception as e:
-        print(e)
         if con:
-            con.finish()
+            con.finish(e)

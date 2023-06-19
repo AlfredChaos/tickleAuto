@@ -32,7 +32,9 @@ class Window(QWidget):
         if target:
             tickle.ticket_snatch(target=target)
         else:
-            raise "目标网址不能为空"
+            # raise "目标网址不能为空"
+            target = "https://detail.damai.cn/item.htm?spm=a2oeg.home.card_0.ditem_1.591b23e1zTvcwn&id=722910145901"
+            tickle.ticket_snatch(target=target)
 
     def on_cancle_clicked(self):
         pass
