@@ -109,7 +109,7 @@ class Concert:
             flag = False
             return flag
 
-    def choose_ticket(self):
+    def choose_ticket(self, viewer):
         """选票操作"""
         if self.status == 2:  # 登录成功入口
             self.log.info('###开始进行日期及票价选择###')
@@ -159,7 +159,7 @@ class Concert:
                     self.log.info('waiting......')
                     if self.driver.find_element(By.CLASS_NAME, 'viewer'):
                         self.log.info('###start check order')
-                        self.check_order()
+                        self.check_order(viewer)
                     else:
                         self.log.error('请添加乘客信息')
                         raise '抢票失败'
@@ -167,7 +167,7 @@ class Concert:
                     while True:
                         self.log.info('waiting......')
                         if self.isElementExist('//*[@id="container"]/div/div[9]/button'):
-                            self.check_order()
+                            self.check_order(viewer)
                             break
 
     def choice_seats(self):
@@ -182,16 +182,23 @@ class Concert:
                 self.driver.find_element_by_xpath(
                     '//*[@id="app"]/div[2]/div[2]/div[2]/button').click()
 
-    def check_order(self):
+    def check_order(self, viewer):
         """下单操作"""
         if self.status in [3, 4, 5, 6]:
             self.log.info('###开始确认订单###')
             try:
                 # 选择购票人信息
-                # radio = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.XPATH,"//div[text()='曹杰']")))
-                # radio.click()
-                num = 3
-                self.log.info(f'Get viewers = {viewers.text}')
+                num = 0
+                viewers = self.driver.find_element(By.CLASS_NAME, 'viewer')
+                viewers_text = viewers.text
+                self.log.info(f'Get viewer text = {viewers_text}')
+                viewers_list = viewers_text.split('************')
+                self.log.info(f'Get viewer list = {viewers_list}')
+                for v in viewers_list:
+                    num = num + 1
+                    if viewer in v:
+                        self.log.info(f'viewer locate in {num}')
+                        break
                 target_i_tag = self.driver.find_element(By.CSS_SELECTOR, f'div.viewer div:nth-child({num}) i')
                 self.driver.execute_script("arguments[0].setAttribute('class', 'iconfont icondanxuan-xuanzhong_')", target_i_tag)
             except Exception as e:
@@ -208,12 +215,12 @@ class Concert:
         self.driver.quit()
 
 
-def ticket_snatch(target):
+def ticket_snatch(target, viewer):
     try:
         con = None
         con = Concert(target)       # 具体如果填写请查看类中的初始化函数
         con.enter_concert()         # 打开浏览器
-        con.choose_ticket()         # 开始抢票
+        con.choose_ticket(viewer)         # 开始抢票
 
     except Exception as e:
         if con:

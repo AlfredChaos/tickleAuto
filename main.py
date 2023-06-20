@@ -19,6 +19,11 @@ class Window(QWidget):
         self.label = QLabel("请输入目标网址")
         self.target = QLineEdit()
         fbox.addRow(self.label, self.target)
+
+        self.name = QLabel("请输入购票人姓名")
+        self.viewer = QLineEdit()
+        fbox.addRow(self.name, self.viewer)
+
         submitButton = QPushButton("Submit")
         cancelButton = QPushButton("Cancel")
         fbox.addRow(submitButton, cancelButton)
@@ -29,12 +34,15 @@ class Window(QWidget):
 
     def on_submit_clicked(self):
         target = self.target.text()
+        viewer = self.viewer.text()
+        if not viewer:
+            raise '购票人姓名是必填项'
         if target:
-            tickle.ticket_snatch(target=target)
+            tickle.ticket_snatch(target=target, viewer=viewer)
         else:
             # raise "目标网址不能为空"
             target = "https://detail.damai.cn/item.htm?spm=a2oeg.home.card_0.ditem_1.591b23e1zTvcwn&id=722910145901"
-            tickle.ticket_snatch(target=target)
+            tickle.ticket_snatch(target=target, viewer=viewer)
 
     def on_cancle_clicked(self):
         pass
