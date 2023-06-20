@@ -188,15 +188,17 @@ class Concert:
             self.log.info('###开始确认订单###')
             try:
                 # 选择购票人信息
-                # self.driver.find_element_by_xpath(
-                #     '//*[@id="container"]/div/div[2]/div[2]/div[1]/div/label').click()
-                radio = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.XPATH,"//div[text()='曹杰']")))
-                radio.click()
+                # radio = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.XPATH,"//div[text()='曹杰']")))
+                # radio.click()
+                num = 3
+                self.log.info(f'Get viewers = {viewers.text}')
+                target_i_tag = self.driver.find_element(By.CSS_SELECTOR, f'div.viewer div:nth-child({num}) i')
+                self.driver.execute_script("arguments[0].setAttribute('class', 'iconfont icondanxuan-xuanzhong_')", target_i_tag)
             except Exception as e:
                 self.log.error('###购票人信息选中失败，自行查看元素位置###')
                 self.log.error(f'func check_order got exception: {e}')
             # 最后一步提交订单
-            time.sleep(random.randint(1, 2))  # 太快会影响加载，导致按钮点击无效
+            time.sleep(60)  # 太快会影响加载，导致按钮点击无效
             self.driver.find_element_by_xpath(
                 '//div[@class = "w1200"]//div[2]//div//div[9]//button[1]').click()
 
