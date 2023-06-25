@@ -199,6 +199,7 @@ class Concert:
                         self.log.info(f'viewer locate in {num}')
                         break
                     num = num + 1
+                # 无法选中
                 tag_element = self.driver.execute_script(f'return document.querySelectorAll("div.viewer div:nth-child(3) i")[{num}];')
                 self.driver.execute_script("arguments[0].setAttribute('class', 'iconfont icondanxuan-xuanzhong_')", tag_element)
             except Exception as e:
