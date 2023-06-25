@@ -195,19 +195,19 @@ class Concert:
                 viewers_list = viewers_text.split('************')
                 self.log.info(f'Get viewer list = {viewers_list}')
                 for v in viewers_list:
-                    num = num + 1
                     if viewer in v:
                         self.log.info(f'viewer locate in {num}')
                         break
-                target_i_tag = self.driver.find_element(By.CSS_SELECTOR, f'div.viewer div:nth-child({num}) i')
-                self.driver.execute_script("arguments[0].setAttribute('class', 'iconfont icondanxuan-xuanzhong_')", target_i_tag)
+                    num = num + 1
+                tag_element = self.driver.execute_script(f'return document.querySelectorAll("div.viewer div:nth-child(3) i")[{num}];')
+                self.driver.execute_script("arguments[0].setAttribute('class', 'iconfont icondanxuan-xuanzhong_')", tag_element)
             except Exception as e:
                 self.log.error('###购票人信息选中失败，自行查看元素位置###')
                 self.log.error(f'func check_order got exception: {e}')
             # 最后一步提交订单
-            time.sleep(60)  # 太快会影响加载，导致按钮点击无效
+            time.sleep(random.randint(1, 3))  # 太快会影响加载，导致按钮点击无效
             self.driver.find_element_by_xpath(
-                '//div[@class = "w1200"]//div[2]//div//div[9]//button[1]').click()
+                '//span[text()="提交订单"]').click()
 
     def finish(self, err):
         """结束"""
