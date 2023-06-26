@@ -15,8 +15,6 @@ from selenium.webdriver.support import expected_conditions as EC
 damai_url = "https://www.damai.cn/"
 # login
 login_url = "https://passport.damai.cn/login"
-# target
-# target_url = "https://detail.damai.cn/item.htm?spm=a2oeg.home.card_0.ditem_1.591b23e1zTvcwn&id=722910145901"
 
 
 class Concert:
